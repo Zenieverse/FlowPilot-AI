@@ -42,38 +42,44 @@ export const WorkflowVisualizer: React.FC<Props> = ({ nodes, edges }) => {
         .on('end', dragended));
 
     node.append('circle')
-      .attr('r', 25)
+      .attr('r', 28)
       .attr('fill', (d) => {
         if (d.status === 'active') return '#00FF94';
         if (d.status === 'done') return '#00E0FF';
         if (d.status === 'error') return '#EF4444';
         return '#1E293B';
       })
-      .attr('stroke', '#334155')
+      .attr('fill-opacity', 0.1)
+      .attr('stroke', (d) => {
+        if (d.status === 'active') return '#00FF94';
+        if (d.status === 'done') return '#00E0FF';
+        return '#334155';
+      })
       .attr('stroke-width', 2)
       .attr('class', (d) => d.status === 'active' ? 'animate-pulse' : '');
 
     node.append('text')
-      .attr('dy', 40)
+      .attr('dy', 45)
       .attr('text-anchor', 'middle')
       .attr('fill', '#94A3B8')
-      .attr('font-size', '10px')
-      .attr('font-family', 'Outfit')
+      .attr('font-size', '9px')
+      .attr('font-family', 'JetBrains Mono')
+      .attr('letter-spacing', '1px')
       .text((d) => d.label.toUpperCase());
 
     node.append('foreignObject')
-      .attr('x', -10)
-      .attr('y', -10)
-      .attr('width', 20)
-      .attr('height', 20)
+      .attr('x', -12)
+      .attr('y', -12)
+      .attr('width', 24)
+      .attr('height', 24)
       .html((d) => {
         const icons: Record<string, string> = {
-          planner: '🎯',
+          planner: '🧠',
           executor: '⚡',
-          knowledge: '📚',
+          knowledge: '🗄️',
           voice: '🎙️'
         };
-        return `<div style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 12px;">${icons[d.type]}</div>`;
+        return `<div style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 16px; filter: drop-shadow(0 0 8px rgba(0,255,148,0.3));">${icons[d.type]}</div>`;
       });
 
     simulation.on('tick', () => {

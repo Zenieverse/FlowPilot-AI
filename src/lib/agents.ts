@@ -14,36 +14,77 @@ export class FlowPilotOrchestrator {
     this.onStatusUpdate = onStatusUpdate;
   }
 
+  private async persistLog(agent: string, message: string) {
+    this.onLog(agent, message);
+    try {
+      await fetch('/api/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: this.taskId, agent, message })
+      });
+    } catch (e) {
+      console.error("Failed to persist log:", e);
+    }
+  }
+
+  private async updateTaskStatus(title: string, status: string) {
+    this.onStatusUpdate(status);
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: this.taskId, title, status })
+      });
+    } catch (e) {
+      console.error("Failed to update task status:", e);
+    }
+  }
+
   async processRequest(request: string) {
-    this.onLog('USER', request);
-    this.onStatusUpdate('planning');
+    await this.updateTaskStatus(request, 'planning');
+    await this.persistLog('USER', request);
     
     // 1. Planner Agent
     const plan = await this.plannerAgent(request);
-    this.onLog('PLANNER', `Decomposed request into ${plan.length} sub-tasks.`);
+    await this.persistLog('PLANNER', `Decomposed request into ${plan.length} sub-tasks.`);
     
     // 2. Execution Loop
     for (const task of plan) {
-      this.onStatusUpdate('executing');
-      this.onLog('EXECUTOR', `Executing: ${task.description}`);
+      await this.updateTaskStatus(request, 'executing');
+      await this.persistLog('EXECUTOR', `Executing: ${task.description}`);
       
       // Simulate execution (Nova Act equivalent)
       await new Promise(r => setTimeout(r, 2000));
       
       if (task.type === 'search' || task.type === 'analyze') {
         const result = await this.knowledgeAgent(task.description);
-        this.onLog('KNOWLEDGE', result);
+        await this.persistLog('KNOWLEDGE', result);
       } else {
-        this.onLog('EXECUTOR', `Successfully completed: ${task.description}`);
+        await this.persistLog('EXECUTOR', `Successfully completed: ${task.description}`);
       }
     }
 
-    this.onStatusUpdate('completed');
-    this.onLog('PLANNER', "Workflow successfully orchestrated and completed.");
+    await this.updateTaskStatus(request, 'completed');
+    await this.persistLog('PLANNER', "Workflow successfully orchestrated and completed.");
+
+    // Add system notification
+    try {
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Workflow Completed',
+          message: `Autonomous task "${request.substring(0, 30)}..." finished successfully.`,
+          type: 'success'
+        })
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   private async plannerAgent(request: string) {
-    this.onLog('PLANNER', "Analyzing intent and decomposing workflow...");
+    await this.persistLog('PLANNER', "Analyzing intent and decomposing workflow...");
     
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
@@ -72,7 +113,7 @@ export class FlowPilotOrchestrator {
   }
 
   private async knowledgeAgent(query: string) {
-    this.onLog('KNOWLEDGE', `Querying multimodal knowledge base for: ${query}`);
+    await this.persistLog('KNOWLEDGE', `Querying multimodal knowledge base for: ${query}`);
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: query,
