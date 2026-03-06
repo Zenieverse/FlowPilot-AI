@@ -1,0 +1,5 @@
+{
+  "name": "FlowPilot AI",
+  "description": "Voice-driven autonomous workflow assistant powered by Gemini AI for task planning and execution.",
+  "requestFramePermissions": ["microphone"]
+}
