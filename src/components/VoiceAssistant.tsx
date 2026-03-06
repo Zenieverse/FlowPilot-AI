@@ -6,9 +6,10 @@ import { cn } from '../lib/utils';
 interface Props {
   onTranscript?: (text: string, isUser: boolean) => void;
   onStatusChange?: (status: string) => void;
+  voiceName?: string;
 }
 
-export const VoiceAssistant: React.FC<Props> = ({ onTranscript, onStatusChange }) => {
+export const VoiceAssistant: React.FC<Props> = ({ onTranscript, onStatusChange, voiceName = "Zephyr" }) => {
   const [isActive, setIsActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -26,9 +27,9 @@ export const VoiceAssistant: React.FC<Props> = ({ onTranscript, onStatusChange }
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName as any } },
           },
-          systemInstruction: "You are FlowPilot AI, a voice-driven autonomous workflow assistant. You help users plan and execute complex tasks. Be concise, helpful, and professional.",
+          systemInstruction: "You are FlowPilot AI, powered by Amazon Nova Sonic. You are a speech-to-speech conversational assistant. You help users plan and execute complex UI workflows using Nova Act. Be concise, helpful, and professional.",
         },
         callbacks: {
           onopen: () => {

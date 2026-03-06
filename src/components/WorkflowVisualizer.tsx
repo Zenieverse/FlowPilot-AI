@@ -74,10 +74,10 @@ export const WorkflowVisualizer: React.FC<Props> = ({ nodes, edges }) => {
       .attr('height', 24)
       .html((d) => {
         const icons: Record<string, string> = {
-          planner: '🧠',
-          executor: '⚡',
-          knowledge: '🗄️',
-          voice: '🎙️'
+          planner: '💎', // Nova Lite
+          executor: '🤖', // Nova Act
+          knowledge: '🌐', // Nova Multimodal
+          voice: '🔊' // Nova Sonic
         };
         return `<div style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 16px; filter: drop-shadow(0 0 8px rgba(0,255,148,0.3));">${icons[d.type]}</div>`;
       });

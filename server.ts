@@ -47,6 +47,15 @@ db.exec(`
     read INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  );
+  -- Initialize default settings
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('agent_sensitivity', '0.7');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('voice_name', 'Zephyr');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('max_steps', '10');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('autonomous_mode', 'true');
 `);
 
 app.use(express.json());
@@ -124,6 +133,27 @@ app.post("/api/notifications/read", (req, res) => {
 app.post("/api/notifications", (req, res) => {
   const { title, message, type } = req.body;
   db.prepare("INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)").run(title, message, type);
+  res.json({ success: true });
+});
+
+app.get("/api/settings", (req, res) => {
+  const settings = db.prepare("SELECT * FROM settings").all();
+  const settingsObj = settings.reduce((acc: any, curr: any) => {
+    acc[curr.key] = curr.value;
+    return acc;
+  }, {});
+  res.json(settingsObj);
+});
+
+app.post("/api/settings", (req, res) => {
+  const { settings } = req.body;
+  const upsert = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+  const transaction = db.transaction((items) => {
+    for (const [key, value] of Object.entries(items)) {
+      upsert.run(key, String(value));
+    }
+  });
+  transaction(settings);
   res.json({ success: true });
 });
 

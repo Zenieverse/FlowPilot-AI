@@ -31,3 +31,10 @@ export interface WorkflowEdge {
   source: string;
   target: string;
 }
+
+export interface AppSettings {
+  agent_sensitivity: number;
+  voice_name: string;
+  max_steps: number;
+  autonomous_mode: boolean;
+}

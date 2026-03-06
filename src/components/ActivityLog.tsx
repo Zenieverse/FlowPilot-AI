@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LogEntry } from '../types';
 import { cn } from '../lib/utils';
-import { Bot, User, Zap, Brain, Database, Trash2, Copy, Filter, Check } from 'lucide-react';
+import { Bot, User, Zap, Brain, Database, Trash2, Copy, Filter, Check, Mic } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
@@ -20,13 +20,13 @@ export const ActivityLog: React.FC<Props> = ({ logs, onClear }) => {
   }, [logs]);
 
   const getAgentIcon = (agent: string) => {
-    switch (agent.toLowerCase()) {
-      case 'planner': return <Brain size={14} className="text-purple-400" />;
-      case 'executor': return <Zap size={14} className="text-brand-primary" />;
-      case 'knowledge': return <Database size={14} className="text-brand-secondary" />;
-      case 'user': return <User size={14} className="text-slate-400" />;
-      default: return <Bot size={14} className="text-slate-400" />;
-    }
+    const a = agent.toLowerCase();
+    if (a.includes('lite')) return <Brain size={14} className="text-purple-400" />;
+    if (a.includes('act')) return <Zap size={14} className="text-brand-primary" />;
+    if (a.includes('multimodal')) return <Database size={14} className="text-brand-secondary" />;
+    if (a.includes('sonic')) return <Mic size={14} className="text-brand-primary" />;
+    if (a === 'user') return <User size={14} className="text-slate-400" />;
+    return <Bot size={14} className="text-slate-400" />;
   };
 
   const filteredLogs = filter 
@@ -46,7 +46,7 @@ export const ActivityLog: React.FC<Props> = ({ logs, onClear }) => {
         <div className="flex items-center gap-4">
           <h3 className="font-display text-sm font-semibold uppercase tracking-widest text-slate-400">Neural Activity Log</h3>
           <div className="flex gap-2">
-            {['PLANNER', 'EXECUTOR', 'KNOWLEDGE'].map(agent => (
+            {['NOVA-LITE', 'NOVA-ACT', 'NOVA-MULTIMODAL'].map(agent => (
               <button
                 key={agent}
                 onClick={() => setFilter(filter === agent ? null : agent)}

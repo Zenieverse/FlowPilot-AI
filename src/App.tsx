@@ -6,9 +6,10 @@ import { TaskHistory } from './components/TaskHistory';
 import { DocumentManager } from './components/DocumentManager';
 import { NotificationCenter } from './components/NotificationCenter';
 import { UserProfile } from './components/UserProfile';
+import { SettingsView } from './components/SettingsView';
 import { FlowPilotOrchestrator } from './lib/agents';
-import { Task, LogEntry, WorkflowNode, WorkflowEdge } from './types';
-import { LayoutDashboard, History, Settings, Shield, Cpu, Globe, FileText, Bell, Search, User } from 'lucide-react';
+import { Task, LogEntry, WorkflowNode, WorkflowEdge, AppSettings } from './types';
+import { LayoutDashboard, History, Settings, Shield, Cpu, Globe, FileText, Bell, Search, User, Mic } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,6 +21,40 @@ export default function App() {
   const [status, setStatus] = useState<string>('Idle');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [settings, setSettings] = useState<AppSettings>({
+    agent_sensitivity: 0.7,
+    voice_name: 'Zephyr',
+    max_steps: 10,
+    autonomous_mode: true
+  });
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.agent_sensitivity) {
+          setSettings({
+            agent_sensitivity: parseFloat(data.agent_sensitivity),
+            voice_name: data.voice_name,
+            max_steps: parseInt(data.max_steps),
+            autonomous_mode: data.autonomous_mode === 'true'
+          });
+        }
+      });
+  }, []);
+
+  const saveSettings = async (newSettings: AppSettings) => {
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: newSettings })
+      });
+      setSettings(newSettings);
+    } catch (err) {
+      console.error(err);
+    }
+  };
   
   const filteredLogs = logs.filter(log => 
     log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -51,7 +86,11 @@ export default function App() {
     setLogs(prev => [newLog, ...prev]);
 
     setNodes(prev => prev.map(n => {
-      if (n.type === agent.toLowerCase()) return { ...n, status: 'active' };
+      const a = agent.toLowerCase();
+      if (a.includes('lite') && n.type === 'planner') return { ...n, status: 'active' };
+      if (a.includes('act') && n.type === 'executor') return { ...n, status: 'active' };
+      if (a.includes('multimodal') && n.type === 'knowledge') return { ...n, status: 'active' };
+      if (a.includes('sonic') && n.type === 'voice') return { ...n, status: 'active' };
       return { ...n, status: n.status === 'active' ? 'done' : n.status };
     }));
   };
@@ -60,7 +99,7 @@ export default function App() {
     if (isUser) {
       setLogs([]); // Clear logs for new task
       setCurrentView('dashboard');
-      const orchestrator = new FlowPilotOrchestrator(addLog, setStatus);
+      const orchestrator = new FlowPilotOrchestrator(addLog, setStatus, settings);
       await orchestrator.processRequest(text);
     }
   };
@@ -186,6 +225,7 @@ export default function App() {
                   <VoiceAssistant 
                     onTranscript={handleTranscript} 
                     onStatusChange={setStatus} 
+                    voiceName={settings.voice_name}
                   />
                   <div className="flex-1 min-h-0">
                     <WorkflowVisualizer nodes={nodes} edges={edges} />
@@ -200,9 +240,9 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-3 gap-6">
                     {[
-                      { label: 'Neural Compute', value: '84.2 TFLOPS', color: 'text-brand-primary' },
-                      { label: 'Active Agents', value: '04', color: 'text-brand-secondary' },
-                      { label: 'Task Success', value: '99.8%', color: 'text-purple-400' }
+                      { label: 'Nova Reasoning', value: 'LITE-2.0', color: 'text-brand-primary' },
+                      { icon: Globe, label: 'Fleet Status', value: 'ACTIVE', color: 'text-brand-secondary' },
+                      { icon: Mic, label: 'Voice AI', value: 'SONIC-2', color: 'text-purple-400' }
                     ].map((stat, i) => (
                       <div key={i} className="glass p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-colors group">
                         <p className="text-[10px] font-display uppercase tracking-widest text-slate-500 mb-1 group-hover:text-slate-400 transition-colors">{stat.label}</p>
@@ -268,21 +308,12 @@ export default function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="h-full glass rounded-3xl p-12 flex flex-col items-center justify-center text-center gap-6"
+                className="h-full"
               >
-                <div className="p-6 rounded-full bg-white/5 text-slate-400">
-                  <Settings size={64} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-display font-bold">Neural Configuration</h2>
-                  <p className="text-slate-500 mt-2 max-w-md">Customize your FlowPilot experience, manage API connections, and configure autonomous agent parameters.</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 w-full max-w-lg mt-8">
-                  <button className="p-4 glass rounded-2xl border border-white/10 hover:border-brand-primary/50 transition-all text-sm font-medium">Agent Sensitivity</button>
-                  <button className="p-4 glass rounded-2xl border border-white/10 hover:border-brand-primary/50 transition-all text-sm font-medium">Voice Synthesis</button>
-                  <button className="p-4 glass rounded-2xl border border-white/10 hover:border-brand-primary/50 transition-all text-sm font-medium">OAuth Connections</button>
-                  <button className="p-4 glass rounded-2xl border border-white/10 hover:border-brand-primary/50 transition-all text-sm font-medium">System Logs</button>
-                </div>
+                <SettingsView 
+                  settings={settings} 
+                  onSave={saveSettings} 
+                />
               </motion.div>
             )}
           </AnimatePresence>
