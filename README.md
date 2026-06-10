@@ -8,6 +8,8 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/27d73220-3f84-45eb-b1a0-3dd2d956ac72
 
+or https://flowpilot-ai-764082783379.us-west1.run.app
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
